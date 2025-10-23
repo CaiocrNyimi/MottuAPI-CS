@@ -13,6 +13,7 @@ using Swashbuckle.AspNetCore.Filters;
 using System.Text;
 using HealthChecks.UI.Client;
 using Microsoft.OpenApi.Models;
+using MottuApi.MLModels;
 
 var builder = WebApplication.CreateBuilder(args);
 var MyAllowAnyOriginPolicy = "_myAllowAnyOriginPolicy";
@@ -58,6 +59,9 @@ builder.Services.AddScoped<IPatioService, PatioService>();
 builder.Services.AddScoped<IMovimentacaoService, MovimentacaoService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 
+// Injeção do serviço ML.NET
+builder.Services.AddSingleton<IMLPredictionService, MLPredictionService>();
+
 // Autenticação JWT
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -93,7 +97,7 @@ builder.Services.AddSwaggerGen(options =>
     // JWT no Swagger
     options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
-        Description = "Insira o token JWT no campo abaixo. Exemplo: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+        Description = "Insira o token JWT no campo abaixo.",
         Name = "Authorization",
         In = ParameterLocation.Header,
         Type = SecuritySchemeType.Http,
@@ -136,6 +140,9 @@ builder.Services.AddCors(options =>
                       });
 });
 
+// Treinar Modelo
+ModelTrainer.TrainAndSaveModelIfNeeded();
+
 var app = builder.Build();
 
 // Swagger UI com versionamento
@@ -161,7 +168,6 @@ app.MapHealthChecks("/health", new HealthCheckOptions()
 })
 .AllowAnonymous();
 
-app.UseHttpsRedirection();
 app.UseCors(MyAllowAnyOriginPolicy);
 
 // Autenticação e autorização
